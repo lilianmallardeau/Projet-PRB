@@ -87,12 +87,12 @@ for cluster_num in numpy.unique(kmeans.labels_):
 # %% Silhouette index : Mesurer la qualité du Clustering avec l’indice de la Silhouette
 
 # Compute matrix of distances between points
-point_distances = numpy.zeros(train_data_x.shape)
+point_distances = numpy.zeros((train_data_x.shape[0], train_data_x.shape[0]))
 for i in range(train_data_x.shape[0]):
     for j in range(i):
         dist = 0
         for l in range(64):
-            dist += (train_data_x[i, l] - train_data_x[j, l])**2
+            dist += (train_data_x.iloc[i, l] - train_data_x.iloc[j, l])**2
         point_distances[i, j] = point_distances[j, i] = numpy.sqrt(dist)
 
 # Compute array of distances between point at given index and points of other clusters
