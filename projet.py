@@ -14,14 +14,15 @@ from contextlib import redirect_stdout
 
 import numpy
 import pandas
-from matplotlib import pyplot
 import seaborn
 # import PIL.Image
-from sklearn.cluster import KMeans
+from matplotlib import pyplot
+import scipy.cluster.hierarchy as sch
+from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.metrics import silhouette_score, confusion_matrix
 
 # %% Parameters
-PLOT_RANDOM_DIGITS = True
+PLOT_RANDOM_DIGITS = False
 PLOT_INERTIA = True
 PLOT_HISTOGRAMS = True
 
@@ -83,16 +84,21 @@ if PLOT_INERTIA:
     pyplot.ylabel("Inertia")
     pyplot.show()
 
+
 # %% Histograms
-if PLOT_HISTOGRAMS:
-    for cluster_num in numpy.unique(kmeans.labels_):
-        pyplot.hist(train_data_y[kmeans.labels_ == cluster_num], bins=range(10), align='left')
-        pyplot.title(f"Cluster {cluster_num}")
+def plot_histograms(clustering, title=None):
+    for cluster_num in numpy.unique(clustering.labels_):
+        pyplot.hist(train_data_y[clustering.labels_ == cluster_num], bins=range(10), align='left')
+        pyplot.title(f"{title + ': ' if title else ''}Cluster {cluster_num}")
         pyplot.xlabel("Digits")
         pyplot.ylabel("Count")
         pyplot.xlim(xmin=-0.5, xmax=9.5)
         pyplot.xticks(range(10))
         pyplot.show()
+
+
+if PLOT_HISTOGRAMS:
+    plot_histograms(kmeans, "KMeans clustering")
 
 
 # %% Silhouette index : Mesurer la qualité du Clustering avec l’indice de la Silhouette
@@ -135,7 +141,7 @@ def silhouette(clustering):
     return silhouette_score(train_data_x, clustering.labels_)
 
 
-# print(f"Silhouette: {silhouette(kmeans)}")
+print(f"KMeans silhouette for K={K}: {silhouette(kmeans)}")
 
 # %% Selecting best clustering from K=10 to 15
 K_range = range(10, 16)
@@ -161,9 +167,69 @@ predicted_labels = [labels[found_cluster] for found_cluster in best_clustering.p
 # print(predicted_labels == test_data_y)
 
 # %% Confusion matrix
-conf_mat = confusion_matrix(test_data_y, predicted_labels)
+conf_mat_kmeans = confusion_matrix(test_data_y, predicted_labels)
 print(f"KMeans confusion matrix for K={best_K}")
-print(conf_mat)
-seaborn.heatmap(conf_mat, annot=True, fmt='d', cmap="YlGnBu").set_title("a")
+print(conf_mat_kmeans)
+seaborn.heatmap(conf_mat_kmeans, annot=True, fmt='d', cmap="YlGnBu").set_title("a")
 pyplot.title(f"KMeans confusion matrix for K={best_K}")
+pyplot.show()
+
+# %% Hierarchical clustering
+
+print("\nComputing hierarchical clustering...")
+clustering = AgglomerativeClustering(n_clusters=K, linkage='ward').fit(train_data_x)
+dendogram = sch.dendrogram(sch.linkage(train_data_x, method='ward'))
+pyplot.title("Hierarchical clustering dendogram")
+pyplot.xlabel("Digits")
+pyplot.ylabel("Euclidian distance")
+pyplot.show()
+
+# %% Histograms for hierarchical clustering
+if PLOT_HISTOGRAMS:
+    plot_histograms(clustering, "Hierarchical clustering")
+
+# %% Comparing silhouette value from KMeans and hierarchical clusterings
+print(f"Kmeans clustering silhouette for {K} clusters: {silhouette(kmeans)}")
+print(f"Hierarchical clustering silhouette for {K} clusters: {silhouette(clustering)}")
+
+# %% Finding best K
+K_range = range(10, 16)
+print(f"Computing Hierarchical clustering for K={K_range.start} to {K_range.stop - 1}...")
+clusterings = {K: AgglomerativeClustering(n_clusters=K).fit(train_data_x) for K in K_range}
+silhouette_values = {K: silhouette(clusterings[K]) for K in K_range}
+
+print("Computing silhouette index for each clustering...")
+best_K = max(silhouette_values, key=silhouette_values.get)
+best_clustering = clusterings[best_K]
+print(f"Best clustering for K={best_K}, silhouette={silhouette_values[best_K]}")
+
+# %% Testing
+# Assigning label to each cluster, by majority vote
+labels = {cluster_num: Counter(train_data_y[best_clustering.labels_ == cluster_num]).most_common(1)[0][0] for
+          cluster_num in numpy.unique(best_clustering.labels_)}
+
+# Check that all the digits are represented
+print("Number of different labels represented:", len(numpy.unique(list(labels.values()))))
+
+# Computing centroids for each cluster (Sklean doesn't do it automatically like with KMeans)
+centroids = {cluster_num: numpy.mean(train_data_x[best_clustering.labels_ == cluster_num]) for cluster_num in
+             numpy.unique(best_clustering.labels_)}
+
+
+# Building a classifier from hierarchical clustering
+def predict(digit):
+    distances = {cluster_num: numpy.sum(numpy.square(centroid - digit)) for cluster_num, centroid in centroids.items()}
+    return labels[min(distances, key=distances.get)]
+
+
+# Computing predicted labels for test set
+predicted_labels = [predict(digit) for index, digit in test_data_x.iterrows()]
+# print(predicted_labels == test_data_y)
+
+# %% Confusion matrix
+conf_mat_hc = confusion_matrix(test_data_y, predicted_labels)
+print(f"Hierarchical clustering confusion matrix for K={best_K}")
+print(conf_mat_hc)
+seaborn.heatmap(conf_mat_hc, annot=True, fmt='d', cmap="YlGnBu").set_title("a")
+pyplot.title(f"Hierarchical clustering confusion matrix for K={best_K}")
 pyplot.show()
