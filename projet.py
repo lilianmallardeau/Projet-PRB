@@ -176,12 +176,16 @@ predicted_labels = [labels[found_cluster] for found_cluster in best_clustering.p
 # print(predicted_labels == test_data_y)
 
 # %% Confusion matrix
-conf_mat_kmeans = confusion_matrix(test_data_y, predicted_labels)
-print(f"KMeans confusion matrix for K={best_K}")
-print(conf_mat_kmeans)
-seaborn.heatmap(conf_mat_kmeans, annot=True, fmt='d', cmap="YlGnBu").set_title("a")
-pyplot.title(f"KMeans confusion matrix for K={best_K}")
-pyplot.show()
+def plot_conf_mat(pred, title):
+    conf_mat_kmeans = confusion_matrix(test_data_y, pred)
+    print(title)
+    print(conf_mat_kmeans)
+    seaborn.heatmap(conf_mat_kmeans, annot=True, fmt='d', cmap="YlGnBu").set_title("a")
+    pyplot.title(title)
+    pyplot.show()
+
+
+plot_conf_mat(predicted_labels, f"KMeans confusion matrix for K={best_K}")
 
 # %% Hierarchical clustering
 
@@ -236,9 +240,4 @@ predicted_labels = [predict(digit) for index, digit in test_data_x.iterrows()]
 # print(predicted_labels == test_data_y)
 
 # %% Confusion matrix
-conf_mat_hc = confusion_matrix(test_data_y, predicted_labels)
-print(f"Hierarchical clustering confusion matrix for K={best_K}")
-print(conf_mat_hc)
-seaborn.heatmap(conf_mat_hc, annot=True, fmt='d', cmap="YlGnBu").set_title("a")
-pyplot.title(f"Hierarchical clustering confusion matrix for K={best_K}")
-pyplot.show()
+plot_conf_mat(predicted_labels, f"Hierarchical clustering confusion matrix for K={best_K}")
