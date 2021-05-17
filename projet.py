@@ -17,6 +17,7 @@ import pandas
 import seaborn
 # import PIL.Image
 from matplotlib import pyplot
+from matplotlib.gridspec import GridSpec
 import scipy.cluster.hierarchy as sch
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.metrics import silhouette_score, confusion_matrix
@@ -87,14 +88,19 @@ if PLOT_INERTIA:
 
 # %% Histograms
 def plot_histograms(clustering, title=None):
+    fig = pyplot.figure(figsize=(10, 7.5))
+    fig.suptitle(title)
+    gs = GridSpec(4, 3)
     for cluster_num in numpy.unique(clustering.labels_):
-        pyplot.hist(train_data_y[clustering.labels_ == cluster_num], bins=range(10), align='left')
-        pyplot.title(f"{title + ': ' if title else ''}Cluster {cluster_num}")
-        pyplot.xlabel("Digits")
-        pyplot.ylabel("Count")
-        pyplot.xlim(xmin=-0.5, xmax=9.5)
-        pyplot.xticks(range(10))
-        pyplot.show()
+        ax = fig.add_subplot(gs[cluster_num])
+        ax.hist(train_data_y[clustering.labels_ == cluster_num], bins=range(10), align='left')
+        ax.set_title(f"Cluster {cluster_num}", fontsize=10)
+        # ax.set_xlabel("Digits")
+        # ax.set_ylabel("Count")
+        ax.set_xlim(xmin=-0.5, xmax=9.5)
+        ax.set_xticks(range(10))
+    fig.tight_layout(rect=[0, 0, 1, .95])
+    fig.show()
 
 
 if PLOT_HISTOGRAMS:
