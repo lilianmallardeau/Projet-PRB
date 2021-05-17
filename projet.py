@@ -93,7 +93,7 @@ def plot_histograms(clustering, title=None):
     gs = GridSpec(4, 3)
     for cluster_num in numpy.unique(clustering.labels_):
         ax = fig.add_subplot(gs[cluster_num])
-        ax.hist(train_data_y[clustering.labels_ == cluster_num], bins=range(10), align='left')
+        ax.hist(train_data_y[clustering.labels_ == cluster_num], bins=range(11), align='left')
         ax.set_title(f"Cluster {cluster_num}", fontsize=10)
         # ax.set_xlabel("Digits")
         # ax.set_ylabel("Count")
