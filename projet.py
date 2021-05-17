@@ -18,6 +18,7 @@ import seaborn
 # import PIL.Image
 from matplotlib import pyplot
 from matplotlib.gridspec import GridSpec
+from matplotlib.ticker import MaxNLocator
 import scipy.cluster.hierarchy as sch
 from sklearn.cluster import KMeans, AgglomerativeClustering
 from sklearn.metrics import silhouette_score, confusion_matrix
@@ -79,8 +80,10 @@ inertia_list = extract_inertia_values(kmeans.fit, train_data_x)
 # %% Plotting inertia
 if PLOT_INERTIA:
     argmin = numpy.argmin([i[-1][1] for i in inertia_list])
+    pyplot.figure(figsize=(10, 5))
     pyplot.plot([i[1] for i in inertia_list[argmin]])
-    pyplot.title("Inertia for each iteration")
+    pyplot.title("Inertia at each iteration")
+    pyplot.gca().xaxis.set_major_locator(MaxNLocator(integer=True))
     pyplot.xlabel("Iteration")
     pyplot.ylabel("Inertia")
     pyplot.show()
