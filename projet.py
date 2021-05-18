@@ -203,6 +203,24 @@ def plot_conf_mat(pred, title):
 
 perform_testing(best_clustering, True)
 
+# %% Let's plot silhouette index and accuracy in the same plot
+fig, ax1 = pyplot.subplots(figsize=(10, 5))
+ax1.set_xlabel("Clusters number K")
+ax1.set_xticks(list(clusterings.keys()))
+
+ax1.set_ylabel("Accuracy (%)", color="tab:red")
+ax1.plot(K_range, list(accuracy.values()), color="tab:red")
+ax1.tick_params(axis='y', labelcolor="tab:red")
+
+ax2 = ax1.twinx()
+ax2.set_ylabel("Silhouette index", color="tab:blue")
+ax2.plot(K_range, list(silhouette_values.values()), color="tab:blue")
+ax2.tick_params(axis='y', labelcolor="tab:blue")
+
+fig.tight_layout()
+ax1.grid(axis="x")
+fig.show()
+
 ########################################################################################################################
 # %% Hierarchical clustering
 
