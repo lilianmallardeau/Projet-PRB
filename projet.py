@@ -21,7 +21,7 @@ from matplotlib.gridspec import GridSpec
 from matplotlib.ticker import MaxNLocator
 import scipy.cluster.hierarchy as sch
 from sklearn.cluster import KMeans, AgglomerativeClustering
-from sklearn.metrics import silhouette_score, confusion_matrix
+from sklearn.metrics import silhouette_score, confusion_matrix, accuracy_score
 
 # %% Parameters
 PLOT_RANDOM_DIGITS = False
@@ -72,6 +72,7 @@ if PLOT_RANDOM_DIGITS:
     for i in [random.randint(0, len(train_data_x)) for i in range(4)]:
         show_digit(train_data_x, i)
 
+########################################################################################################################
 # %% K-means with sklearn
 K = 10
 kmeans = KMeans(n_clusters=K, verbose=1)
@@ -156,6 +157,7 @@ print(f"KMeans silhouette for K={K}: {silhouette(kmeans)}")
 K_range = range(10, 16)
 print(f"Computing KMeans for K={K_range.start} to {K_range.stop - 1}...")
 clusterings = {K: KMeans(n_clusters=K).fit(train_data_x) for K in K_range}
+# [plot_histograms(c, f"KMeans clustering for {K} clusters") for K, c in clusterings.items()]
 silhouette_values = {K: silhouette(clusterings[K]) for K in K_range}
 
 print("Computing silhouette index for each KMeans...")
@@ -163,17 +165,31 @@ best_K = max(silhouette_values, key=silhouette_values.get)
 best_clustering = clusterings[best_K]
 print(f"Best clustering for K={best_K}, silhouette={silhouette_values[best_K]}")
 
+
 # %% Testing
-# Assigning label to each cluster, by majority vote
-labels = {cluster_num: Counter(train_data_y[best_clustering.labels_ == cluster_num]).most_common(1)[0][0] for
-          cluster_num in numpy.unique(best_clustering.labels_)}
+def perform_testing(clustering, print_conf_mat=False):
+    labels = {cluster_num: Counter(train_data_y[clustering.labels_ == cluster_num]).most_common(1)[0][0] for
+              cluster_num in numpy.unique(clustering.labels_)}
 
-# Check that all the digits are represented
-print("Number of different labels represented:", len(numpy.unique(list(labels.values()))))
+    # Check that all the digits are represented
+    print(f"K={clustering.n_clusters}, Number of different labels represented:",
+          len(numpy.unique(list(labels.values()))))
 
-# Computing predicted labels for test set
-predicted_labels = [labels[found_cluster] for found_cluster in best_clustering.predict(test_data_x)]
-# print(predicted_labels == test_data_y)
+    # Computing predicted labels for test set
+    predicted_labels = [labels[found_cluster] for found_cluster in clustering.predict(test_data_x)]
+    # print(predicted_labels == test_data_y)
+
+    # Plot confusion matrix
+    if print_conf_mat:
+        plot_conf_mat(predicted_labels, f"KMeans confusion matrix for K={clustering.n_clusters}")
+
+    # Return accuracy
+    return accuracy_score(test_data_y, predicted_labels, normalize=True)
+
+
+# Assigning label to each cluster, by majority vote, and computing accuracy
+accuracy = {K: 100 * perform_testing(clustering) for K, clustering in clusterings.items()}
+
 
 # %% Confusion matrix
 def plot_conf_mat(pred, title):
@@ -185,8 +201,9 @@ def plot_conf_mat(pred, title):
     pyplot.show()
 
 
-plot_conf_mat(predicted_labels, f"KMeans confusion matrix for K={best_K}")
+perform_testing(best_clustering, True)
 
+########################################################################################################################
 # %% Hierarchical clustering
 
 print("\nComputing hierarchical clustering...")
@@ -238,6 +255,7 @@ def predict(digit):
 # Computing predicted labels for test set
 predicted_labels = [predict(digit) for index, digit in test_data_x.iterrows()]
 # print(predicted_labels == test_data_y)
+accuracy = accuracy_score(predicted_labels, test_data_y, normalize=True)
 
 # %% Confusion matrix
 plot_conf_mat(predicted_labels, f"Hierarchical clustering confusion matrix for K={best_K}")
